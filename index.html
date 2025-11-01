@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explor - Cadastro/Login</title>
+  <link rel="stylesheet" href="index.css" />
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+  <style>
+    /* estilos mínimos para não depender do index.css durante testes */
+    .hidden{display:none;}
+    .container{display:flex;height:100vh;}
+    .image-side{flex:1;background:#0a0a0a;color:#fff;display:flex;align-items:center;justify-content:center;}
+    .form-side{flex:1;display:flex;align-items:center;justify-content:center;}
+    .form-container{width:320px;}
+    .password-group{position:relative;margin-bottom:12px;}
+    .password-group input{width:100%;padding:10px 36px 10px 10px;}
+    .password-group i{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;}
+    .create-btn{width:100%;padding:10px;margin-top:8px;}
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="image-side">
+    <div class="overlay">
+      <div class="top-bar">
+        <h2 class="logo">&copy;EXPLOR</h2>
+      </div>
+      <div class="text">
+        <h3>Jogando jogos,<br />Criando Memórias</h3>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-side">
+    <div class="form-container">
+      <!-- Criar Conta -->
+      <form id="signupForm">
+        <h1>Criar conta</h1>
+        <p>Já tem uma conta?
+          <button type="button" class="switch-btn" id="toLoginBtn">Entrar</button>
+        </p>
+
+        <div class="name-group">
+          <input type="text" id="firstName" placeholder="Nome" required />
+          <input type="text" id="lastName" placeholder="Sobrenome" required />
+        </div>
+
+        <div class="username-group">
+          <input type="email" id="signupEmail" placeholder="Email" required />
+          <i class="bx bx-user "></i>
+        </div>
+
+        <div class="password-group">
+          <input type="password" id="signupPassword" placeholder="Digite sua senha" required />
+          <i class='bx bx-show toggle-password' data-target="signupPassword" title="Mostrar/ocultar senha"></i>
+        </div>
+
+        <label class="checkbox">
+          <input type="checkbox" required />
+          <span>Concordo com os <a href="termos.html" target="_blank">Termos & Condições</a></span>
+        </label>
+
+        <button type="submit" class="create-btn">Criar conta</button>
+      </form>
+
+      <!-- Login -->
+      <form id="loginForm" class="hidden">
+        <h1>Entrar</h1>
+        <p>Ainda não tem conta?
+          <button type="button" class="switch-btn" id="toSignupBtn">Criar Conta</button>
+        </p>
+
+        <div class="username-group">
+          <input type="email" id="loginEmail" placeholder="Email" required />
+          <i class="bx bx-user"></i>
+        </div>
+
+        <div class="password-group">
+          <input type="password" id="loginPassword" placeholder="Senha" required />
+          <i class='bx bx-show toggle-password' data-target="loginPassword" title="Mostrar/ocultar senha"></i>
+        </div>
+
+        <button type="submit" class="create-btn">Entrar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+
+  // CONFIG FIREBASE (mantive a sua)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCGUHsZrauHULqv0hZjv2kko6Hf1CYrFss",
+    authDomain: "login-7a06a.firebaseapp.com",
+    projectId: "login-7a06a",
+    storageBucket: "login-7a06a.appspot.com",
+    messagingSenderId: "812723632015",
+    appId: "1:812723632015:web:d826712b8e4ed032d03dfa",
+    measurementId: "G-T4E21SVBJE"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // ELEMENTOS
+  const signupForm = document.getElementById('signupForm');
+  const loginForm  = document.getElementById('loginForm');
+  const toLoginBtn = document.getElementById('toLoginBtn');
+  const toSignupBtn= document.getElementById('toSignupBtn');
+
+  // Alternar formulários
+  toLoginBtn.addEventListener('click', () => {
+    signupForm.classList.add('hidden');
+    loginForm.classList.remove('hidden');
+  });
+  toSignupBtn.addEventListener('click', () => {
+    loginForm.classList.add('hidden');
+    signupForm.classList.remove('hidden');
+  });
+
+  // Mostrar/ocultar senha (works for any .toggle-password)
+  document.querySelectorAll('.toggle-password').forEach(icon => {
+    icon.addEventListener('click', () => {
+      const targetId = icon.dataset.target;
+      const input = document.getElementById(targetId);
+      if(!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        // trocar ícone: bx-show -> bx-hide (boxicons possui bx-hide)
+        icon.classList.remove('bx-show');
+        icon.classList.add('bx-hide');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('bx-hide');
+        icon.classList.add('bx-show');
+      }
+      // manter foco no input após clicar no ícone
+      input.focus();
+    });
+  });
+
+  // Função que carrega termos.html e substitui TODO o documento atual
+  async function loadTermsAndReplaceDocument() {
+    try {
+      // tenta buscar o arquivo via HTTP
+      const res = await fetch('./termos.html', {cache: "no-store"});
+      if (!res.ok) throw new Error('Fetch retornou ' + res.status);
+      const html = await res.text();
+      // substitui todo o documento (head+body) pelo conteúdo de termos.html
+      document.open();
+      document.write(html);
+      document.close();
+    } catch (err) {
+      console.error('Erro ao carregar termos.html via fetch:', err);
+      // fallback: navega para o arquivo (pode funcionar quando fetch falhar por file://)
+      window.location.href = './termos.html';
+    }
+  }
+
+  // Cadastro
+  signupForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const email = document.getElementById('signupEmail').value;
+    const password = document.getElementById('signupPassword').value;
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(() => {
+        console.log("Cadastro realizado com sucesso!");
+        // carrega e substitui o documento pela página termos.html
+        loadTermsAndReplaceDocument();
+      })
+      .catch(error => {
+        console.error("Erro no cadastro:", error.code, error.message);
+        alert("Erro ao criar conta: " + error.message);
+      });
+  });
+
+  // Login
+  loginForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => {
+        console.log("Login realizado com sucesso!");
+        // carrega e substitui o documento pela página termos.html
+        loadTermsAndReplaceDocument();
+      })
+      .catch(error => {
+        console.error("Erro no login:", error.code, error.message);
+        alert("Erro ao fazer login: " + error.message);
+      });
+  });
+
+  // --- Observação importante (não bloqueante) ---
+  // Se você está abrindo o index.html diretamente pelo sistema de arquivos (file://),
+  // o fetch('./termos.html') pode falhar por política do navegador. Nesse caso:
+  // 1) Instale e use a extensão Live Server do VS Code e abra pelo http://127.0.0.1:5500/ (recomendado)
+  // 2) Ou verifique se o arquivo termos.html está na mesma pasta e o fallback (window.location.href) será usado.
+  //
+  // Eu coloquei o fallback automaticamente acima para aumentar as chances de funcionar localmente.
+</script>
+</body>
+</html>
